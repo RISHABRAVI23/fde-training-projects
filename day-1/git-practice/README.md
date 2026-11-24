@@ -1,0 +1,1 @@
+Please check the git conflict resolved by checking git log --graph. I have deleted the branch(practice/day-1-git-conflict) used for this.
