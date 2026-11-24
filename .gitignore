@@ -3,3 +3,4 @@ __pycache__/
 .env
 *.log
 !day-1/shell-one-liners/access.log
+.pytest_cache/
