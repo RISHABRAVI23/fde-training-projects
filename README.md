@@ -1,0 +1,1 @@
+This repo contains all the projects or practice scripts written by hand or built with the help of claude everyday.
