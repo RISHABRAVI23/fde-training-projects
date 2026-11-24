@@ -1,3 +1,4 @@
 line 1
 color = red
 line 3
+line 4
