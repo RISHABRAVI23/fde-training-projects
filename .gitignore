@@ -2,3 +2,4 @@ __pycache__/
 .venv/
 .env
 *.log
+!day-1/shell-one-liners/access.log
