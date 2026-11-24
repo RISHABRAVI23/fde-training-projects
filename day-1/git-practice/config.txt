@@ -1,0 +1,3 @@
+line 1
+color = blue
+line 3
