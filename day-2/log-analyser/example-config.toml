@@ -1,0 +1,7 @@
+# Example config for log-analyser. Use with: log-analyser access.log --config example-config.toml
+# Every setting is optional; anything left out uses the built-in default.
+# Command-line flags override anything set here.
+
+top_ips = 5            # how many IPs to list (default 10)
+top_endpoints = 3      # how many slowest endpoints to list (default 5)
+log_level = "INFO"     # DEBUG, INFO, WARNING (default), ERROR or CRITICAL
