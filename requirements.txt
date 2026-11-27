@@ -12,7 +12,7 @@ identify==2.6.20
 idna==3.20
 iniconfig==2.3.1
 librt==0.17.0
--e git+ssh://git@github.com/RISHABRAVI23/fde-training-projects.git@63a848acae941f6eaa6cb6b970535ef830a4297f#egg=log_analyser&subdirectory=day-2\log-analyser
+-e git+ssh://git@github.com/RISHABRAVI23/fde-training-projects.git@3b92d4f94bdcac82e6e5cfeadfbc2186a68f2261#egg=log_analyser&subdirectory=day-2\log-analyser
 mypy==2.4.1
 mypy_extensions==1.2.0
 nodeenv==1.12.0
