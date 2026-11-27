@@ -1,18 +1,18 @@
 import json
+import subprocess
+import sys
+import tracemalloc
 
 import pytest
-
-import subprocess
-import tracemalloc
-import sys
-
 from log_analyser.cli import main
 from log_analyser.parsing import Request, parse_line
 from log_analyser.report import format_report
 from log_analyser.stats import analyse, top_with_ties
 
-VALID = ('198.51.100.5 - - [23/Nov/2026:00:01:20 +0000] "GET /products HTTP/1.1" '
-         '200 31724 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" 0.079')
+VALID = (
+    '198.51.100.5 - - [23/Nov/2026:00:01:20 +0000] "GET /products HTTP/1.1" '
+    '200 31724 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" 0.079'
+)
 
 # The worked example from SPEC.md (5 valid lines + 1 malformed).
 EXAMPLE_LINES = [
@@ -21,11 +21,12 @@ EXAMPLE_LINES = [
     '10.0.0.1 - - [23/Nov/2026:10:05:00 +0000] "POST /api/orders HTTP/1.1" 201 64 "-" "curl/8.4.0" 1.200\n',
     '10.0.0.3 - - [23/Nov/2026:10:30:00 +0000] "GET /reports HTTP/1.1" 500 0 "-" "curl/8.4.0" 2.000\n',
     '10.0.0.1 - - [23/Nov/2026:10:45:00 +0000] "GET /home HTTP/1.1" 200 256 "-" "curl/8.4.0" 0.200\n',
-    'garbage line\n',
+    "garbage line\n",
 ]
 
 
 # ---------- parse_line ----------
+
 
 def test_parse_valid_line():
     assert parse_line(VALID) == Request(
@@ -42,25 +43,29 @@ def test_parse_integer_time():
     assert parse_line(line).time == 2.0
 
 
-@pytest.mark.parametrize("line", [
-    "",                                                              # empty
-    "\n",                                                            # blank
-    "garbage line with no structure",                                # garbage
-    '203.0.113.7 - - [23/Nov/2026:15:02:11 +0000] "GET /home',       # truncated
-    VALID.replace(" 0.079", " abc"),                                 # non-numeric time
-    VALID.replace(" 0.079", ""),                                     # time missing
-    VALID.replace('" 200 ', '" 20X '),                               # bad status
-    VALID.replace("00:01:20", "0:01:20"),                            # bad timestamp
-])
+@pytest.mark.parametrize(
+    "line",
+    [
+        "",  # empty
+        "\n",  # blank
+        "garbage line with no structure",  # garbage
+        '203.0.113.7 - - [23/Nov/2026:15:02:11 +0000] "GET /home',  # truncated
+        VALID.replace(" 0.079", " abc"),  # non-numeric time
+        VALID.replace(" 0.079", ""),  # time missing
+        VALID.replace('" 200 ', '" 20X '),  # bad status
+        VALID.replace("00:01:20", "0:01:20"),  # bad timestamp
+    ],
+)
 def test_parse_malformed_returns_none(line):
     assert parse_line(line) is None
 
 
 # ---------- analyse ----------
 
+
 def test_analyse_example_counts():
     stats = analyse(EXAMPLE_LINES)
-    assert stats.total == 5                                   # garbage line skipped
+    assert stats.total == 5  # garbage line skipped
     assert stats.status == {200: 2, 201: 1, 404: 1, 500: 1}
     assert stats.ips == {"10.0.0.1": 3, "10.0.0.2": 1, "10.0.0.3": 1}
     assert stats.hours == {"09": 2, "10": 3}
@@ -69,7 +74,9 @@ def test_analyse_example_counts():
 def test_analyse_average_times():
     averages = analyse(EXAMPLE_LINES).average_times()
     # pytest.approx: floats like 0.1 + 0.3 + 0.2 are not exact in binary (Day 1 fundamentals!)
-    assert averages == pytest.approx({"/home": 0.2, "/api/orders": 1.2, "/reports": 2.0})
+    assert averages == pytest.approx(
+        {"/home": 0.2, "/api/orders": 1.2, "/reports": 2.0}
+    )
 
 
 def test_analyse_empty_input():
@@ -85,8 +92,9 @@ def test_analyse_only_malformed():
 
 # ---------- malformed-line counting (new in Day 2) ----------
 
+
 def test_counts_lines_and_malformed_in_example():
-    stats = analyse(EXAMPLE_LINES)          # 5 valid + 1 garbage line
+    stats = analyse(EXAMPLE_LINES)  # 5 valid + 1 garbage line
     assert (stats.lines, stats.total, stats.malformed) == (6, 5, 1)
 
 
@@ -114,6 +122,7 @@ def test_analyse_accepts_a_generator():
 
 # ---------- top_with_ties ----------
 
+
 def test_top_simple():
     assert top_with_ties({"a": 1, "b": 3, "c": 2}, 2) == [("b", 3), ("c", 2)]
 
@@ -138,7 +147,11 @@ def test_top_includes_all_tied_at_cutoff():
 
 def test_top_tie_above_cutoff_does_not_extend():
     # A tie at 1st place must not pull in extra rows.
-    assert top_with_ties({"a": 9, "b": 9, "c": 1, "d": 0}, 3) == [("a", 9), ("b", 9), ("c", 1)]
+    assert top_with_ties({"a": 9, "b": 9, "c": 1, "d": 0}, 3) == [
+        ("a", 9),
+        ("b", 9),
+        ("c", 1),
+    ]
 
 
 def test_top_zero():
@@ -179,12 +192,17 @@ def test_report_matches_spec_example():
 def test_report_empty():
     report = format_report(analyse([]))
     assert report.startswith("Total valid requests: 0")
-    for heading in ["Requests by status code", "Top 10 IPs",
-                    "Slowest endpoints (average time)", "Requests per hour"]:
+    for heading in [
+        "Requests by status code",
+        "Top 10 IPs",
+        "Slowest endpoints (average time)",
+        "Requests per hour",
+    ]:
         assert heading in report
 
 
 # ---------- main / CLI ----------
+
 
 def test_main_example_file(tmp_path, capsys):
     log = tmp_path / "example.log"
@@ -240,13 +258,18 @@ def test_main_no_arguments_exits_2(capsys):
 
 def test_runs_as_python_dash_m(tmp_path):
     # End-to-end: run the INSTALLED package with "python -m log_analyser", check the exit code.
-    result = subprocess.run([sys.executable, "-m", "log_analyser", str(tmp_path / "missing.log")],
-                            capture_output=True, text=True)
+    result = subprocess.run(
+        [sys.executable, "-m", "log_analyser", str(tmp_path / "missing.log")],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     assert result.returncode == 1
     assert "Error" in result.stderr
 
 
 # ---------- 500 MB log (run with: pytest --runslow) ----------
+
 
 @pytest.mark.slow
 def test_500mb_log_streams_with_constant_memory(tmp_path):
@@ -256,8 +279,7 @@ def test_500mb_log_streams_with_constant_memory(tmp_path):
     repeats = target_bytes // len(block.encode()) + 1
     log = tmp_path / "big.log"
     with open(log, "w", encoding="utf-8", newline="\n") as f:
-        for _ in range(repeats):
-            f.write(block)
+        f.writelines(block for _ in range(repeats))
     size_mb = log.stat().st_size / (1024 * 1024)
     assert size_mb >= 500
 
@@ -270,6 +292,6 @@ def test_500mb_log_streams_with_constant_memory(tmp_path):
     peak_mb = peak / (1024 * 1024)
     print(f"\nfile: {size_mb:.0f} MB, peak memory while analysing: {peak_mb:.2f} MB")
 
-    assert stats.total == 5 * repeats            # every block has 5 valid lines
+    assert stats.total == 5 * repeats  # every block has 5 valid lines
     assert stats.ips["10.0.0.1"] == 3 * repeats
-    assert peak_mb < 50                          # would be ~GBs if the file were loaded whole
+    assert peak_mb < 50  # would be ~GBs if the file were loaded whole

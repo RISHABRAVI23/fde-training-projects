@@ -7,6 +7,7 @@ Day 3 exercise: a payments module with a `PaymentProcessor` Protocol and three i
 ```python
 class PaymentProcessor(Protocol):
     proc_name: str
+
     def charge(self, amount: int) -> tuple[str, int]: ...
 ```
 

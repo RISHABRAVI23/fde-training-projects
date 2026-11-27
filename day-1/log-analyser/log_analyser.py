@@ -3,34 +3,37 @@
 Usage: python log_analyser.py <logfile>
 See SPEC.md for the full specification.
 """
+
 import argparse
 import re
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable, NamedTuple, Optional
+from typing import NamedTuple
 
 
 class Request(NamedTuple):
     """One valid log line, reduced to the fields the report needs."""
+
     ip: str
-    hour: str      # "00".."23"
+    hour: str  # "00".."23"
     path: str
     status: int
-    time: float    # request time in seconds
+    time: float  # request time in seconds
 
 
 # One regex describing a valid line. Each (?P<name>...) is a named capture group.
 LINE_RE = re.compile(
-    r'^(?P<ip>\S+) \S+ \S+ '                                    # IP, then two "-" fields
-    r'\[\d{2}/\w{3}/\d{4}:(?P<hour>\d{2}):\d{2}:\d{2}[^\]]*\] '  # [23/Nov/2026:09:15:00 +0000]
-    r'"\S+ (?P<path>\S+)[^"]*" '                                # "GET /home HTTP/1.1"
-    r'(?P<status>\d{3}) '                                       # 200
-    r'.*\s(?P<time>\d+(?:\.\d+)?)\s*$'                          # ... last field: 0.079
+    r"^(?P<ip>\S+) \S+ \S+ "  # IP, then two "-" fields
+    r"\[\d{2}/\w{3}/\d{4}:(?P<hour>\d{2}):\d{2}:\d{2}[^\]]*\] "  # [23/Nov/2026:09:15:00 +0000]
+    r'"\S+ (?P<path>\S+)[^"]*" '  # "GET /home HTTP/1.1"
+    r"(?P<status>\d{3}) "  # 200
+    r".*\s(?P<time>\d+(?:\.\d+)?)\s*$"  # ... last field: 0.079
 )
 
 
-def parse_line(line: str) -> Optional[Request]:
+def parse_line(line: str) -> Request | None:
     """Parse one log line. Return a Request, or None if the line is malformed."""
     match = LINE_RE.match(line)
     if match is None:
@@ -47,6 +50,7 @@ def parse_line(line: str) -> Optional[Request]:
 @dataclass
 class Stats:
     """Running totals. Memory depends on the number of DISTINCT IPs/paths, not on file size."""
+
     total: int = 0
     status: Counter = field(default_factory=Counter)
     ips: Counter = field(default_factory=Counter)
@@ -56,7 +60,10 @@ class Stats:
 
     def average_times(self) -> dict:
         """Average request time per path."""
-        return {path: self.path_time[path] / count for path, count in self.path_count.items()}
+        return {
+            path: self.path_time[path] / count
+            for path, count in self.path_count.items()
+        }
 
 
 def analyse(lines: Iterable[str]) -> Stats:
@@ -98,7 +105,7 @@ def _rows(pairs: list, fmt_value) -> list:
     if not pairs:
         return []
     width = max(len(str(name)) for name, _ in pairs)
-    return [f"  {str(name):<{width}}  {fmt_value(value)}" for name, value in pairs]
+    return [f"  {name!s:<{width}}  {fmt_value(value)}" for name, value in pairs]
 
 
 def format_report(stats: Stats) -> str:
@@ -119,13 +126,13 @@ def format_report(stats: Stats) -> str:
     return "\n\n".join("\n".join(section) for section in sections)
 
 
-def main(argv: Optional[list] = None) -> int:
+def main(argv: list | None = None) -> int:
     """Command-line entry point. Returns the exit code."""
     parser = argparse.ArgumentParser(
         description="Summarise a web server access log (see SPEC.md)."
     )
     parser.add_argument("logfile", help="path to the access log")
-    args = parser.parse_args(argv)   # bad arguments: argparse prints usage and exits 2
+    args = parser.parse_args(argv)  # bad arguments: argparse prints usage and exits 2
 
     try:
         # errors="replace": undecodable bytes become U+FFFD instead of crashing.

@@ -1,7 +1,8 @@
 """Stats: stream lines through the parser and accumulate running totals."""
+
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 from .parsing import parse_line
 
@@ -9,9 +10,10 @@ from .parsing import parse_line
 @dataclass
 class Stats:
     """Running totals. Memory depends on the number of DISTINCT IPs/paths, not on file size."""
-    lines: int = 0       # every line read, valid or not
-    malformed: int = 0   # lines that could not be parsed
-    total: int = 0       # valid requests (lines - malformed)
+
+    lines: int = 0  # every line read, valid or not
+    malformed: int = 0  # lines that could not be parsed
+    total: int = 0  # valid requests (lines - malformed)
     status: Counter = field(default_factory=Counter)
     ips: Counter = field(default_factory=Counter)
     hours: Counter = field(default_factory=Counter)
@@ -20,7 +22,10 @@ class Stats:
 
     def average_times(self) -> dict:
         """Average request time per path."""
-        return {path: self.path_time[path] / count for path, count in self.path_count.items()}
+        return {
+            path: self.path_time[path] / count
+            for path, count in self.path_count.items()
+        }
 
 
 def analyse(lines: Iterable[str]) -> Stats:

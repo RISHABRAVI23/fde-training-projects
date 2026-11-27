@@ -5,13 +5,16 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from log_analyser import __version__
 from log_analyser.cli import main
 
-LINES = [f'10.0.0.{i} - - [23/Nov/2026:09:00:00 +0000] "GET /p{i} HTTP/1.1" 200 1 "-" "x" 0.{i}\n'
-         for i in range(1, 8)]
-LINES += [f'10.0.0.1 - - [23/Nov/2026:10:00:00 +0000] "GET /p1 HTTP/1.1" 200 1 "-" "x" 0.1\n'] * 3   # 10.0.0.1 is busiest
+LINES = [
+    f'10.0.0.{i} - - [23/Nov/2026:09:00:00 +0000] "GET /p{i} HTTP/1.1" 200 1 "-" "x" 0.{i}\n'
+    for i in range(1, 8)
+]
+LINES += [
+    '10.0.0.1 - - [23/Nov/2026:10:00:00 +0000] "GET /p1 HTTP/1.1" 200 1 "-" "x" 0.1\n'
+] * 3  # 10.0.0.1 is busiest
 
 
 @pytest.fixture
@@ -32,6 +35,7 @@ def log_events(err):
 
 
 # ---------- flags ----------
+
 
 def test_top_ips_flag(logfile, capsys):
     assert main([str(logfile), "--top-ips", "1"]) == 0
@@ -73,6 +77,7 @@ def test_version_flag(capsys):
 
 # ---------- config errors -> exit 1 ----------
 
+
 def test_invalid_config_exits_1(logfile, tmp_path, capsys):
     config = write_config(tmp_path, "top_ips = 0\n")
     assert main([str(logfile), "--config", str(config)]) == 1
@@ -88,9 +93,12 @@ def test_missing_config_exits_1(logfile, tmp_path, capsys):
 
 # ---------- logging ----------
 
+
 def test_default_level_shows_no_logs_for_clean_file(logfile, capsys):
     assert main([str(logfile)]) == 0
-    assert capsys.readouterr().err == ""          # WARNING level and nothing wrong: stderr stays quiet
+    assert (
+        capsys.readouterr().err == ""
+    )  # WARNING level and nothing wrong: stderr stays quiet
 
 
 def test_info_level_logs_all_events(logfile, capsys):
@@ -118,10 +126,16 @@ def test_missing_logfile_logs_error_and_exits_1(tmp_path, capsys):
 
 # ---------- the installed command, end to end ----------
 
+
 def test_installed_command(logfile):
     # The "log-analyser" launcher lives next to the venv's python (Scripts/ on Windows, bin/ elsewhere).
     command = shutil.which("log-analyser", path=str(Path(sys.executable).parent))
     assert command is not None, "log-analyser not installed: run  pip install -e .[dev]"
-    result = subprocess.run([command, str(logfile), "--top-ips", "2"], capture_output=True, text=True)
+    result = subprocess.run(
+        [command, str(logfile), "--top-ips", "2"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     assert result.returncode == 0
     assert "Top 2 IPs" in result.stdout

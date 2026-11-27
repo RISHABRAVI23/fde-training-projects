@@ -1,9 +1,12 @@
 """pytest configuration: adds a --runslow option so the 500 MB test only runs when asked."""
+
 import pytest
 
 
 def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true", help="run slow tests (500 MB log)")
+    parser.addoption(
+        "--runslow", action="store_true", help="run slow tests (500 MB log)"
+    )
 
 
 def pytest_configure(config):
